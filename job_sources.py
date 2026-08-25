@@ -18,8 +18,10 @@ from job_score import calculate_score
 # TELEGRAM
 # ==========================================
 
-BOT_TOKEN = "8699881487:AAGypXS3cY_AtFlZ-cSFM-JpAsVHLffclEE"
-CHAT_ID = "504100909"
+import os
+
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+CHAT_ID = os.getenv("CHAT_ID")
 
 MIN_TELEGRAM_SCORE = 65
 TOP_MATCH_MIN_SCORE = 40
