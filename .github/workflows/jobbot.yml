@@ -13,6 +13,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Restore database
+        uses: actions/download-artifact@v4
+        with:
+          name: jobbot-database
+          path: .
+        continue-on-error: true
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -29,3 +36,10 @@ jobs:
           CHAT_ID: ${{ secrets.CHAT_ID }}
         run: |
           python job_sources.py
+
+      - name: Save database
+        uses: actions/upload-artifact@v4
+        with:
+          name: jobbot-database
+          path: jobs.db
+          retention-days: 90
