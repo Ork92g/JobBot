@@ -1,6 +1,5 @@
 import re
 
-
 # ==========================================
 # TARGET PROFILE
 # ==========================================
@@ -10,6 +9,8 @@ TARGET_ROLES = [
     "soc analyst",
     "soc tier 1",
     "soc tier 2",
+    "soc analyst tier 1",
+    "soc analyst tier 2",
     "security analyst",
     "cybersecurity analyst",
     "cyber security analyst",
@@ -44,8 +45,9 @@ TARGET_ROLES = [
     "cybersecurity specialist",
     "cyber security specialist",
     "security engineer",
+    "blue team",
+    "cyber defense analyst",
 ]
-
 
 # ==========================================
 # HIGH VALUE SKILLS
@@ -90,7 +92,6 @@ GOOD_SKILLS = [
     "forensics",
 ]
 
-
 # ==========================================
 # POSITIVE SENIORITY
 # ==========================================
@@ -114,8 +115,13 @@ POSITIVE_WORDS = [
     "2+ years",
     "1 year",
     "2 years",
+    "0 years",
+    "no experience",
+    "without experience",
+    "graduates",
+    "graduate",
+    "early career",
 ]
-
 
 # ==========================================
 # NEGATIVE SENIORITY
@@ -134,8 +140,8 @@ NEGATIVE_WORDS = [
     "vp",
     "vice president",
     "chief",
+    "staff security",
 ]
-
 
 # ==========================================
 # HARD NEGATIVE ROLES
@@ -173,7 +179,6 @@ HARD_NEGATIVE_ROLES = [
     "human resources",
 ]
 
-
 # ==========================================
 # LOCATION
 # ==========================================
@@ -195,11 +200,12 @@ ISRAEL_LOCATIONS = [
     "yokneam",
     "center district",
     "gush dan",
+    "israel remote",
+    "remote israel",
 ]
 
-
 # ==========================================
-# SCORE
+# CALCULATE SCORE
 # ==========================================
 
 def calculate_score(job):
@@ -213,17 +219,14 @@ def calculate_score(job):
     score = 0
     skills_found = []
 
-
     # ======================================
     # HARD NEGATIVE ROLE
     # ======================================
 
     for word in HARD_NEGATIVE_ROLES:
-
         if word in title:
             score -= 70
             break
-
 
     # ======================================
     # TARGET ROLE IN TITLE
@@ -232,13 +235,10 @@ def calculate_score(job):
     role_match = False
 
     for role in TARGET_ROLES:
-
         if role in title:
-
             role_match = True
             score += 40
             break
-
 
     # ======================================
     # SECURITY CONTEXT
@@ -264,38 +264,32 @@ def calculate_score(job):
     context_matches = 0
 
     for word in security_context:
-
         if word in text:
-
             context_matches += 1
 
     if context_matches >= 3:
         score += 15
-
     elif context_matches >= 1:
         score += 5
-
 
     # ======================================
     # ISRAEL
     # ======================================
 
+    is_israel = False
+
     for place in ISRAEL_LOCATIONS:
-
-        if place in location:
-
-            score += 10
+        if place in location or place in text:
+            is_israel = True
+            score += 15
             break
-
 
     # ======================================
     # REMOTE
     # ======================================
 
     if "remote" in text:
-
         score += 5
-
 
     # ======================================
     # SECURITY SKILLS
@@ -306,11 +300,9 @@ def calculate_score(job):
         if skill in text:
 
             if skill not in skills_found:
-
                 skills_found.append(skill)
 
             score += 3
-
 
     # ======================================
     # HIGH VALUE SKILLS BONUS
@@ -332,16 +324,10 @@ def calculate_score(job):
     high_value_matches = 0
 
     for skill in high_value:
-
         if skill in text:
-
             high_value_matches += 1
 
-    score += min(
-        high_value_matches * 4,
-        20
-    )
-
+    score += min(high_value_matches * 4, 20)
 
     # ======================================
     # JUNIOR / ENTRY
@@ -350,10 +336,8 @@ def calculate_score(job):
     for word in POSITIVE_WORDS:
 
         if word in text:
-
-            score += 10
+            score += 12
             break
-
 
     # ======================================
     # SENIORITY PENALTY
@@ -362,17 +346,15 @@ def calculate_score(job):
     for word in NEGATIVE_WORDS:
 
         if word in title:
-
-            score -= 35
+            score -= 40
             break
-
 
     # ======================================
     # EXPERIENCE REQUIREMENT
     # ======================================
 
     experience_numbers = re.findall(
-        r"(\d+)\+?\s*(?:years?|yrs?)",
+        r"(\d+)\s*\+?\s*(?:years?|yrs?)",
         description
     )
 
@@ -386,21 +368,60 @@ def calculate_score(job):
             )
 
             if max_years >= 7:
-
                 score -= 30
 
             elif max_years >= 5:
-
                 score -= 20
 
             elif max_years >= 3:
-
                 score -= 10
 
         except ValueError:
-
             pass
 
+    # ======================================
+    # STRONG JUNIOR BONUS
+    # ======================================
+
+    junior_signals = [
+        "junior",
+        "entry level",
+        "entry-level",
+        "tier 1",
+        "tier-1",
+        "l1",
+        "0-1 years",
+        "0–1 years",
+        "1-2 years",
+        "1–2 years",
+        "no experience",
+        "without experience",
+        "graduates",
+        "early career",
+    ]
+
+    junior_matches = 0
+
+    for word in junior_signals:
+        if word in text:
+            junior_matches += 1
+
+    if junior_matches >= 1:
+        score += 8
+
+    # ======================================
+    # STRONG SENIOR EXPERIENCE PENALTY
+    # ======================================
+
+    if re.search(r"\b(?:6|7|8|9|10|\d{2,})\+?\s*(?:years?|yrs?)", description):
+        score -= 15
+
+    # ======================================
+    # NON-ISRAEL PENALTY
+    # ======================================
+
+    if not is_israel:
+        score -= 20
 
     # ======================================
     # FINAL SCORE
@@ -413,6 +434,5 @@ def calculate_score(job):
             score
         )
     )
-
 
     return score, skills_found
