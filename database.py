@@ -4,9 +4,9 @@ import sqlite3
 DATABASE = "jobs.db"
 
 
-# ==========================================
+# ============================================================
 # DATABASE CONNECTION
-# ==========================================
+# ============================================================
 
 def get_connection():
 
@@ -17,9 +17,9 @@ def get_connection():
     return connection
 
 
-# ==========================================
+# ============================================================
 # CREATE / MIGRATE DATABASE
-# ==========================================
+# ============================================================
 
 def create_database():
 
@@ -27,27 +27,34 @@ def create_database():
 
     cursor = connection.cursor()
 
-    # Create table if it does not exist
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS jobs (
+
             job_id TEXT PRIMARY KEY,
+
             title TEXT,
+
             company TEXT,
+
             location TEXT,
+
             link TEXT,
+
             description TEXT DEFAULT '',
+
             score INTEGER DEFAULT 0,
+
             skills TEXT DEFAULT '',
-            first_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+            first_seen TIMESTAMP
+                DEFAULT CURRENT_TIMESTAMP
         )
     """)
 
-    # --------------------------------------
+
+    # ========================================================
     # MIGRATION
-    # --------------------------------------
-    # If jobs.db already existed with the old
-    # schema, add the missing columns.
-    # --------------------------------------
+    # ========================================================
 
     cursor.execute(
         "PRAGMA table_info(jobs)"
@@ -58,17 +65,28 @@ def create_database():
         for row in cursor.fetchall()
     }
 
+
     migrations = {
 
         "description":
-            "ALTER TABLE jobs ADD COLUMN description TEXT DEFAULT ''",
+            """
+            ALTER TABLE jobs
+            ADD COLUMN description TEXT DEFAULT ''
+            """,
 
         "score":
-            "ALTER TABLE jobs ADD COLUMN score INTEGER DEFAULT 0",
+            """
+            ALTER TABLE jobs
+            ADD COLUMN score INTEGER DEFAULT 0
+            """,
 
         "skills":
-            "ALTER TABLE jobs ADD COLUMN skills TEXT DEFAULT ''",
+            """
+            ALTER TABLE jobs
+            ADD COLUMN skills TEXT DEFAULT ''
+            """
     }
+
 
     for column, sql in migrations.items():
 
@@ -79,23 +97,26 @@ def create_database():
                 cursor.execute(sql)
 
                 print(
-                    f"Database migration: added {column}"
+                    f"Database migration: "
+                    f"added {column}"
                 )
 
             except sqlite3.OperationalError as error:
 
                 print(
-                    f"Migration warning ({column}): {error}"
+                    f"Migration warning "
+                    f"({column}): {error}"
                 )
+
 
     connection.commit()
 
     connection.close()
 
 
-# ==========================================
+# ============================================================
 # CHECK NEW JOB
-# ==========================================
+# ============================================================
 
 def is_new_job(job_id):
 
@@ -119,9 +140,9 @@ def is_new_job(job_id):
     return result is None
 
 
-# ==========================================
+# ============================================================
 # SAVE JOB
-# ==========================================
+# ============================================================
 
 def save_job(job):
 
@@ -134,12 +155,20 @@ def save_job(job):
         []
     )
 
-    # Convert skills list to text
-    if isinstance(skills, list):
+
+    # ========================================================
+    # CONVERT SKILLS LIST TO TEXT
+    # ========================================================
+
+    if isinstance(
+        skills,
+        list
+    ):
 
         skills = ", ".join(
             skills
         )
+
 
     cursor.execute(
         """
@@ -157,25 +186,54 @@ def save_job(job):
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
-            job.get("job_id", ""),
-            job.get("title", ""),
-            job.get("company", ""),
-            job.get("location", ""),
-            job.get("link", ""),
-            job.get("description", ""),
-            job.get("score", 0),
+            job.get(
+                "job_id",
+                ""
+            ),
+
+            job.get(
+                "title",
+                ""
+            ),
+
+            job.get(
+                "company",
+                ""
+            ),
+
+            job.get(
+                "location",
+                ""
+            ),
+
+            job.get(
+                "link",
+                ""
+            ),
+
+            job.get(
+                "description",
+                ""
+            ),
+
+            job.get(
+                "score",
+                0
+            ),
+
             skills
         )
     )
+
 
     connection.commit()
 
     connection.close()
 
 
-# ==========================================
+# ============================================================
 # GET JOB
-# ==========================================
+# ============================================================
 
 def get_job(job_id):
 
@@ -205,30 +263,50 @@ def get_job(job_id):
 
     connection.close()
 
+
     if not row:
 
         return None
 
+
     return {
-        "job_id": row[0],
-        "title": row[1],
-        "company": row[2],
-        "location": row[3],
-        "link": row[4],
-        "description": row[5],
-        "score": row[6],
-        "skills": (
-            row[7].split(", ")
-            if row[7]
-            else []
-        ),
-        "first_seen": row[8]
+
+        "job_id":
+            row[0],
+
+        "title":
+            row[1],
+
+        "company":
+            row[2],
+
+        "location":
+            row[3],
+
+        "link":
+            row[4],
+
+        "description":
+            row[5],
+
+        "score":
+            row[6],
+
+        "skills":
+            (
+                row[7].split(", ")
+                if row[7]
+                else []
+            ),
+
+        "first_seen":
+            row[8]
     }
 
 
-# ==========================================
+# ============================================================
 # DATABASE STATS
-# ==========================================
+# ============================================================
 
 def get_job_count():
 

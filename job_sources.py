@@ -2,6 +2,7 @@ import requests
 import re
 import time
 import sys
+import os
 
 from bs4 import BeautifulSoup
 
@@ -14,103 +15,28 @@ from database import (
 from job_score import calculate_score
 
 
-# ==========================================
+# ============================================================
 # TELEGRAM
-# ==========================================
-
-import os
+# ============================================================
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
+
+if not BOT_TOKEN:
+    print("WARNING: BOT_TOKEN is missing")
+
+if not CHAT_ID:
+    print("WARNING: CHAT_ID is missing")
 
 MIN_TELEGRAM_SCORE = 65
 TOP_MATCH_MIN_SCORE = 40
 
 
-# ==========================================
-# LINKEDIN SEARCH TERMS
-# ==========================================
+# ============================================================
+# LINKEDIN
+# ============================================================
 
-SEARCH_TERMS = [
-
-    # SOC
-    "SOC",
-    "SOC Analyst",
-    "SOC Tier 1",
-    "SOC Tier 2",
-    "SOC L1",
-    "SOC L2",
-
-    # Security Operations
-    "Security Operations",
-    "Security Operations Analyst",
-    "Security Operations Center",
-    "Security Operations Specialist",
-    "Cyber Security Operations",
-    "Cybersecurity Operations",
-
-    # SecOps
-    "SecOps",
-    "SecOps Analyst",
-
-    # Monitoring
-    "Security Monitoring",
-    "Security Monitoring Analyst",
-    "Cybersecurity Monitoring",
-
-    # Cyber Defense
-    "Cyber Defense",
-    "Cyber Defense Analyst",
-    "Cybersecurity Defense",
-
-    # Security Analyst
-    "Security Analyst",
-    "Cybersecurity Analyst",
-    "Cyber Security Analyst",
-    "Information Security Analyst",
-    "IT Security Analyst",
-
-    # MDR
-    "MDR",
-    "MDR Analyst",
-    "Managed Detection Response",
-
-    # Incident Response
-    "Incident Response",
-    "Incident Responder",
-    "Incident Analyst",
-
-    # DFIR
-    "DFIR",
-    "Digital Forensics",
-    "Digital Forensics Incident Response",
-
-    # Threat
-    "Threat Analyst",
-    "Threat Intelligence",
-    "Threat Detection",
-    "Threat Hunter",
-    "Threat Hunting",
-
-    # Detection
-    "Detection Analyst",
-    "Detection Engineer",
-
-    # Blue Team
-    "Blue Team",
-    "Security Investigator",
-
-    # General
-    "Cybersecurity Specialist",
-    "Cyber Security Specialist",
-    "Information Security",
-]
-
-
-LINKEDIN_URL = (
-    "https://www.linkedin.com/jobs/search/"
-)
-
+LINKEDIN_URL = "https://www.linkedin.com/jobs/search/"
 
 HEADERS = {
     "User-Agent": (
@@ -123,32 +49,104 @@ HEADERS = {
 }
 
 
-# ==========================================
+SEARCH_TERMS = [
+    "SOC",
+    "SOC Analyst",
+    "SOC Tier 1",
+    "SOC Tier 2",
+    "SOC L1",
+    "SOC L2",
+
+    "Security Operations",
+    "Security Operations Analyst",
+    "Security Operations Center",
+    "Security Operations Specialist",
+    "Cyber Security Operations",
+    "Cybersecurity Operations",
+
+    "SecOps",
+    "SecOps Analyst",
+
+    "Security Monitoring",
+    "Security Monitoring Analyst",
+    "Cybersecurity Monitoring",
+
+    "Cyber Defense",
+    "Cyber Defense Analyst",
+    "Cybersecurity Defense",
+
+    "Security Analyst",
+    "Cybersecurity Analyst",
+    "Cyber Security Analyst",
+    "Information Security Analyst",
+    "IT Security Analyst",
+
+    "MDR",
+    "MDR Analyst",
+    "Managed Detection Response",
+
+    "Incident Response",
+    "Incident Responder",
+    "Incident Analyst",
+
+    "DFIR",
+    "Digital Forensics",
+    "Digital Forensics Incident Response",
+
+    "Threat Analyst",
+    "Threat Intelligence",
+    "Threat Detection",
+    "Threat Hunter",
+    "Threat Hunting",
+
+    "Detection Analyst",
+    "Detection Engineer",
+
+    "Blue Team",
+    "Security Investigator",
+
+    "Cybersecurity Specialist",
+    "Cyber Security Specialist",
+    "Information Security",
+
+    "Incident Detection",
+    "Security Investigation",
+]
+
+
+# ============================================================
 # GREENHOUSE
-# ==========================================
+# ============================================================
 
 GREENHOUSE_COMPANIES = {
-
     "Transmit Security": "transmitsecurity",
     "Armis Security": "armissecurity",
-
 }
 
 
-# ==========================================
+# ============================================================
 # LEVER
-# ==========================================
+# ============================================================
 
 LEVER_COMPANIES = {
-
     "CYE": "CYE",
-
 }
 
 
-# ==========================================
+# ============================================================
+# ASHBY
+# ============================================================
+
+ASHBY_COMPANIES = {
+    "Zafran Security": "zafran-security",
+    "Menlo Security": "menlo-security",
+    "Pi Security": "pi-security",
+}
+
+
+# ============================================================
 # RELEVANT TITLE WORDS
-# ==========================================
+# ============================================================
 
 RELEVANT_TITLE_WORDS = [
 
@@ -175,6 +173,7 @@ RELEVANT_TITLE_WORDS = [
 
     "cyber defense",
     "cyber defense analyst",
+    "cybersecurity defense",
 
     "mdr",
     "mdr analyst",
@@ -193,6 +192,7 @@ RELEVANT_TITLE_WORDS = [
     "threat hunting",
 
     "detection analyst",
+    "detection engineer",
 
     "blue team",
 
@@ -204,16 +204,17 @@ RELEVANT_TITLE_WORDS = [
     "cybersecurity specialist",
     "cyber security specialist",
 
+    "security detection",
 ]
 
 
-# ==========================================
+# ============================================================
 # HARD IRRELEVANT
-# ==========================================
+# ============================================================
 
 HARD_IRRELEVANT = [
 
-    # Management
+    # Senior / management
     "senior",
     "sr.",
     "lead",
@@ -279,32 +280,12 @@ HARD_IRRELEVANT = [
     "enterprise architect",
     "grc",
     "governance risk compliance",
-
 ]
 
 
-# ==========================================
-# ADDITIONAL NEGATIVE TITLE WORDS
-# ==========================================
-
-NEGATIVE_TITLE_WORDS = [
-
-    "architect",
-    "architecture",
-    "manager",
-    "lead",
-    "director",
-    "principal",
-    "head",
-    "chief",
-    "vp",
-
-]
-
-
-# ==========================================
-# TITLE RELEVANCE
-# ==========================================
+# ============================================================
+# TITLE FILTER
+# ============================================================
 
 def title_is_relevant(title):
 
@@ -314,24 +295,25 @@ def title_is_relevant(title):
     for word in HARD_IRRELEVANT:
 
         if word in title_lower:
-
             return False
 
     # Relevant terms
     for word in RELEVANT_TITLE_WORDS:
 
         if word in title_lower:
-
             return True
 
     return False
 
 
-# ==========================================
+# ============================================================
 # JOB ID
-# ==========================================
+# ============================================================
 
 def extract_job_id(link):
+
+    if not link:
+        return None
 
     match = re.search(
         r"/jobs/view/(\d+)",
@@ -339,37 +321,38 @@ def extract_job_id(link):
     )
 
     if match:
-
         return match.group(1)
 
     return None
 
 
-# ==========================================
+# ============================================================
 # LINKEDIN
-# ==========================================
+# ============================================================
 
 def get_linkedin_jobs(search_term):
 
     params = {
-
         "keywords": search_term,
-
         "location": "Israel",
-
     }
 
-    response = requests.get(
+    try:
 
-        LINKEDIN_URL,
+        response = requests.get(
+            LINKEDIN_URL,
+            params=params,
+            headers=HEADERS,
+            timeout=20
+        )
 
-        params=params,
+    except requests.RequestException as error:
 
-        headers=HEADERS,
+        print(
+            f"LinkedIn ERROR: {error}"
+        )
 
-        timeout=20
-
-    )
+        return []
 
     print(
         f"LinkedIn status: "
@@ -377,23 +360,16 @@ def get_linkedin_jobs(search_term):
     )
 
     if response.status_code != 200:
-
         return []
 
     soup = BeautifulSoup(
-
         response.text,
-
         "html.parser"
-
     )
 
     cards = soup.find_all(
-
         "div",
-
         class_="base-card"
-
     )
 
     results = []
@@ -401,41 +377,32 @@ def get_linkedin_jobs(search_term):
     for card in cards:
 
         title = card.find("h3")
-
         company = card.find("h4")
 
         location = card.find(
-
             "span",
-
             class_="job-search-card__location"
-
         )
 
         link_element = card.find("a")
 
         if not title:
-
             continue
 
         if not company:
-
             continue
 
         if not link_element:
-
             continue
 
         link = link_element.get("href")
 
         if not link:
-
             continue
 
         job_id = extract_job_id(link)
 
         if not job_id:
-
             continue
 
         results.append({
@@ -473,9 +440,9 @@ def get_linkedin_jobs(search_term):
     return results
 
 
-# ==========================================
+# ============================================================
 # GREENHOUSE
-# ==========================================
+# ============================================================
 
 def get_greenhouse_jobs(
     company_name,
@@ -483,43 +450,32 @@ def get_greenhouse_jobs(
 ):
 
     url = (
-
         "https://boards-api.greenhouse.io/"
-
         f"v1/boards/{board_token}/jobs"
-
         "?content=true"
-
     )
 
     try:
 
         response = requests.get(
-
             url,
-
             timeout=20
-
         )
 
     except requests.RequestException as error:
 
         print(
-            f"{company_name}: ERROR "
-            f"{error}"
+            f"{company_name}: ERROR {error}"
         )
 
         return []
 
     print(
-
         f"{company_name}: "
         f"HTTP {response.status_code}"
-
     )
 
     if response.status_code != 200:
-
         return []
 
     try:
@@ -532,65 +488,31 @@ def get_greenhouse_jobs(
 
     results = []
 
-    for job in data.get(
-        "jobs",
-        []
-    ):
+    for job in data.get("jobs", []):
 
         job_id = job.get("id")
-
-        title = job.get(
-            "title",
-            ""
-        )
-
-        link = job.get(
-            "absolute_url",
-            ""
-        )
-
-        description = job.get(
-            "content",
-            ""
-        )
+        title = job.get("title", "")
+        link = job.get("absolute_url", "")
+        description = job.get("content", "")
 
         location = (
-
-            job
-
-            .get(
-                "location",
-                {}
-            )
-
-            .get(
-                "name",
-                "Unknown"
-            )
-
+            job.get("location", {})
+            .get("name", "Unknown")
         )
 
         if not job_id:
-
             continue
 
         if not title:
-
             continue
 
         if not link:
-
             continue
 
         results.append({
 
-            "job_id": (
-
-                f"greenhouse-"
-                f"{company_name}-"
-                f"{job_id}"
-
-            ),
+            "job_id":
+                f"greenhouse-{company_name}-{job_id}",
 
             "title":
                 title,
@@ -605,16 +527,22 @@ def get_greenhouse_jobs(
                 link,
 
             "description":
-                description
+                BeautifulSoup(
+                    description,
+                    "html.parser"
+                ).get_text(
+                    " ",
+                    strip=True
+                )
 
         })
 
     return results
 
 
-# ==========================================
+# ============================================================
 # LEVER
-# ==========================================
+# ============================================================
 
 def get_lever_jobs(
     company_name,
@@ -622,43 +550,32 @@ def get_lever_jobs(
 ):
 
     url = (
-
         "https://api.lever.co/v0/postings/"
-
         f"{company_slug}"
-
         "?mode=json"
-
     )
 
     try:
 
         response = requests.get(
-
             url,
-
             timeout=20
-
         )
 
     except requests.RequestException as error:
 
         print(
-            f"{company_name}: ERROR "
-            f"{error}"
+            f"{company_name}: ERROR {error}"
         )
 
         return []
 
     print(
-
         f"{company_name}: "
         f"HTTP {response.status_code}"
-
     )
 
     if response.status_code != 200:
-
         return []
 
     try:
@@ -673,27 +590,13 @@ def get_lever_jobs(
 
     for job in data:
 
-        job_id = job.get(
-            "id"
-        )
+        job_id = job.get("id")
+        title = job.get("text", "")
+        link = job.get("hostedUrl", "")
 
-        title = job.get(
-            "text",
+        description = job.get(
+            "descriptionPlain",
             ""
-        )
-
-        link = job.get(
-            "hostedUrl",
-            ""
-        )
-
-        description = (
-
-            job.get(
-                "descriptionPlain",
-                ""
-            )
-
         )
 
         categories = job.get(
@@ -707,26 +610,18 @@ def get_lever_jobs(
         )
 
         if not job_id:
-
             continue
 
         if not title:
-
             continue
 
         if not link:
-
             continue
 
         results.append({
 
-            "job_id": (
-
-                f"lever-"
-                f"{company_name}-"
-                f"{job_id}"
-
-            ),
+            "job_id":
+                f"lever-{company_name}-{job_id}",
 
             "title":
                 title,
@@ -748,9 +643,137 @@ def get_lever_jobs(
     return results
 
 
-# ==========================================
+# ============================================================
+# ASHBY
+# ============================================================
+
+def get_ashby_jobs(
+    company_name,
+    board_name
+):
+
+    url = (
+        "https://api.ashbyhq.com/"
+        f"posting-api/job-board/{board_name}"
+        "?includeCompensation=true"
+    )
+
+    try:
+
+        response = requests.get(
+            url,
+            timeout=20
+        )
+
+    except requests.RequestException as error:
+
+        print(
+            f"{company_name}: ERROR {error}"
+        )
+
+        return []
+
+    print(
+        f"{company_name}: "
+        f"HTTP {response.status_code}"
+    )
+
+    if response.status_code != 200:
+        return []
+
+    try:
+
+        data = response.json()
+
+    except ValueError:
+
+        return []
+
+    results = []
+
+    for job in data.get("jobs", []):
+
+        job_id = (
+            job.get("jobUrl")
+            or job.get("applyUrl")
+            or job.get("id")
+        )
+
+        title = job.get(
+            "title",
+            ""
+        )
+
+        location = job.get(
+            "location",
+            "Unknown"
+        )
+
+        description = job.get(
+            "descriptionPlain",
+            ""
+        )
+
+        if not description:
+
+            description = job.get(
+                "description",
+                ""
+            )
+
+        link = (
+            job.get("jobUrl")
+            or job.get("applyUrl")
+            or ""
+        )
+
+        if not job_id:
+            continue
+
+        if not title:
+            continue
+
+        if not link:
+            continue
+
+        if "<" in description:
+
+            description = BeautifulSoup(
+                description,
+                "html.parser"
+            ).get_text(
+                " ",
+                strip=True
+            )
+
+        results.append({
+
+            "job_id":
+                f"ashby-{company_name}-{job_id}",
+
+            "title":
+                title,
+
+            "company":
+                company_name,
+
+            "location":
+                location,
+
+            "link":
+                link,
+
+            "description":
+                description
+
+        })
+
+    return results
+
+
+# ============================================================
 # DUPLICATES
-# ==========================================
+# ============================================================
 
 def remove_duplicates(jobs):
 
@@ -763,7 +786,6 @@ def remove_duplicates(jobs):
         )
 
         if not job_id:
-
             continue
 
         if job_id not in unique:
@@ -775,18 +797,24 @@ def remove_duplicates(jobs):
     )
 
 
-# ==========================================
+# ============================================================
 # TELEGRAM
-# ==========================================
+# ============================================================
 
 def send_telegram(message):
 
+    if not BOT_TOKEN or not CHAT_ID:
+
+        print(
+            "Telegram ERROR: "
+            "BOT_TOKEN or CHAT_ID missing"
+        )
+
+        return False
+
     url = (
-
         "https://api.telegram.org/"
-
         f"bot{BOT_TOKEN}/sendMessage"
-
     )
 
     data = {
@@ -805,13 +833,9 @@ def send_telegram(message):
     try:
 
         response = requests.post(
-
             url,
-
             data=data,
-
             timeout=20
-
         )
 
         print(
@@ -839,9 +863,9 @@ def send_telegram(message):
         return False
 
 
-# ==========================================
+# ============================================================
 # TELEGRAM MESSAGE
-# ==========================================
+# ============================================================
 
 def create_message(
     job,
@@ -886,9 +910,9 @@ def create_message(
     return message
 
 
-# ==========================================
+# ============================================================
 # MAIN
-# ==========================================
+# ============================================================
 
 def main():
 
@@ -904,46 +928,30 @@ def main():
     )
 
     print(
-        "          SOC JOB HUNTER V5"
+        "          SOC JOB HUNTER V6"
     )
 
     print(
         "========================================"
     )
 
-    if test_alert:
-
-        print()
-        print(
-            "⚠️ TEST ALERT MODE ENABLED"
-        )
-
-
-    # ======================================
-    # DATABASE
-    # ======================================
-
     create_database()
-
 
     all_jobs = []
 
 
-    # ======================================
+    # ========================================================
     # LINKEDIN
-    # ======================================
+    # ========================================================
 
     print()
-
     print(
         "========== LINKEDIN =========="
     )
 
-
     for search_term in SEARCH_TERMS:
 
         print()
-
         print(
             f"Searching: "
             f"{search_term}"
@@ -971,19 +979,17 @@ def main():
                 f"{error}"
             )
 
-        time.sleep(2)
+        time.sleep(1)
 
 
-    # ======================================
+    # ========================================================
     # GREENHOUSE
-    # ======================================
+    # ========================================================
 
     print()
-
     print(
         "========== GREENHOUSE =========="
     )
-
 
     for company, token in (
         GREENHOUSE_COMPANIES.items()
@@ -995,7 +1001,7 @@ def main():
         )
 
         print(
-            f"Found: "
+            f"{company}: Found: "
             f"{len(jobs)}"
         )
 
@@ -1004,16 +1010,14 @@ def main():
         )
 
 
-    # ======================================
+    # ========================================================
     # LEVER
-    # ======================================
+    # ========================================================
 
     print()
-
     print(
         "========== LEVER =========="
     )
-
 
     for company, slug in (
         LEVER_COMPANIES.items()
@@ -1025,7 +1029,7 @@ def main():
         )
 
         print(
-            f"Found: "
+            f"{company}: Found: "
             f"{len(jobs)}"
         )
 
@@ -1034,27 +1038,63 @@ def main():
         )
 
 
-    # ======================================
+    # ========================================================
+    # ASHBY
+    # ========================================================
+
+    print()
+    print(
+        "========== ASHBY =========="
+    )
+
+    for company, board_name in (
+        ASHBY_COMPANIES.items()
+    ):
+
+        jobs = get_ashby_jobs(
+            company,
+            board_name
+        )
+
+        print(
+            f"{company}: Found: "
+            f"{len(jobs)}"
+        )
+
+        all_jobs.extend(
+            jobs
+        )
+
+
+    # ========================================================
     # UNIQUE
-    # ======================================
+    # ========================================================
 
     unique_jobs = remove_duplicates(
         all_jobs
     )
 
 
-    # ======================================
+    # ========================================================
     # SCORE
-    # ======================================
+    # ========================================================
 
     scored_jobs = []
-
 
     for job in unique_jobs:
 
         if not title_is_relevant(
             job["title"]
         ):
+
+            # DEBUG:
+            # show exactly what was filtered
+            print(
+                f"FILTERED: "
+                f"{job['title']} "
+                f"| {job['company']} "
+                f"| {job['location']}"
+            )
 
             continue
 
@@ -1063,7 +1103,6 @@ def main():
         )
 
         job["score"] = score
-
         job["skills"] = skills
 
         scored_jobs.append(
@@ -1071,26 +1110,21 @@ def main():
         )
 
 
-    # ======================================
+    # ========================================================
     # SORT
-    # ======================================
+    # ========================================================
 
     scored_jobs.sort(
-
-        key=lambda job:
-            job["score"],
-
+        key=lambda job: job["score"],
         reverse=True
-
     )
 
 
-    # ======================================
+    # ========================================================
     # DATABASE
-    # ======================================
+    # ========================================================
 
     new_jobs = []
-
 
     for job in scored_jobs:
 
@@ -1107,9 +1141,9 @@ def main():
             )
 
 
-    # ======================================
+    # ========================================================
     # SUMMARY
-    # ======================================
+    # ========================================================
 
     print()
 
@@ -1146,9 +1180,9 @@ def main():
     )
 
 
-    # ======================================
+    # ========================================================
     # TOP MATCHES
-    # ======================================
+    # ========================================================
 
     print()
 
@@ -1164,14 +1198,11 @@ def main():
         "========================================"
     )
 
-
     displayed = 0
-
 
     for job in scored_jobs:
 
         if job["score"] < TOP_MATCH_MIN_SCORE:
-
             continue
 
         displayed += 1
@@ -1219,9 +1250,9 @@ def main():
         )
 
 
-    # ======================================
+    # ========================================================
     # TELEGRAM
-    # ======================================
+    # ========================================================
 
     print()
 
@@ -1237,11 +1268,13 @@ def main():
         "========================================"
     )
 
-
     telegram_count = 0
 
 
-    # TEST MODE
+    # ========================================================
+    # TEST ALERT
+    # ========================================================
+
     if test_alert:
 
         test_job = None
@@ -1265,13 +1298,9 @@ def main():
             )
 
             message = create_message(
-
                 test_job,
-
                 test_job["score"],
-
                 test_job["skills"]
-
             )
 
             if send_telegram(message):
@@ -1286,23 +1315,21 @@ def main():
             )
 
 
-    # NORMAL MODE
+    # ========================================================
+    # NORMAL ALERTS
+    # ========================================================
+
     else:
 
         for job in new_jobs:
 
             if job["score"] < MIN_TELEGRAM_SCORE:
-
                 continue
 
             message = create_message(
-
                 job,
-
                 job["score"],
-
                 job["skills"]
-
             )
 
             if send_telegram(message):
@@ -1318,9 +1345,9 @@ def main():
     )
 
 
-    # ======================================
+    # ========================================================
     # DONE
-    # ======================================
+    # ========================================================
 
     print()
 
@@ -1337,10 +1364,9 @@ def main():
     )
 
 
-# ==========================================
+# ============================================================
 # RUN
-# ==========================================
+# ============================================================
 
 if __name__ == "__main__":
-
     main()
