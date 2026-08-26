@@ -8,6 +8,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: jobbot
+  cancel-in-progress: false
+
 jobs:
   jobbot:
     runs-on: ubuntu-latest
@@ -15,6 +19,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Restore database
         run: |
@@ -46,11 +52,18 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+          cp jobs.db /tmp/jobs.db
+
+          git fetch origin main
+          git reset --hard origin/main
+
+          cp /tmp/jobs.db jobs.db
+
           git add jobs.db
 
           if git diff --cached --quiet; then
             echo "No database changes."
           else
             git commit -m "Update job database"
-            git push
+            git push origin HEAD:main
           fi
